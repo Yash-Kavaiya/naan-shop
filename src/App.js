@@ -1,11 +1,257 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, MapPin, Phone, Clock, User, ChefHat, DollarSign, Package, Star, Utensils, Coffee, Beef } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, Clock, User, ChefHat, DollarSign, Package, Star, Utensils, Coffee, Beef, Lock, Timer, CheckCircle } from 'lucide-react';
 
 const NaanStopWebsite = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({ name: '', phone: '' });
+
+  // Timer component for order tracking
+  const OrderTimer = ({ order }) => {
+    const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+    const [isCompleted, setIsCompleted] = useState(false);
+
+    useEffect(() => {
+      if (order && timeLeft > 0) {
+        const timer = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              setIsCompleted(true);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(timer);
+      }
+    }, [order, timeLeft]);
+
+    const formatTime = (seconds) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    if (!order) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+          {!isCompleted ? (
+            <>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Timer className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Confirmed!</h3>
+              <p className="text-gray-600 mb-4">
+                Thank you <span className="font-semibold text-orange-600">{order.customerName}</span>! 
+                Your delicious meal is being prepared with love.
+              </p>
+              <div className="bg-orange-50 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-600 mb-2">Estimated preparation time:</p>
+                <div className="text-3xl font-bold text-orange-600 mb-2">{formatTime(timeLeft)}</div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-orange-600 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${((600 - timeLeft) / 600) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Order ID: #{order.id.toString().slice(-6)}
+              </p>
+              <p className="text-sm text-gray-600">
+                We'll have your fresh, hot meal ready soon. Thank you for choosing Naan Stop! 🍽️
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Ready!</h3>
+              <p className="text-gray-600 mb-4">
+                <span className="font-semibold text-orange-600">{order.customerName}</span>, 
+                your delicious meal is ready for pickup! 
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Please visit our counter with Order ID: #{order.id.toString().slice(-6)}
+              </p>
+              <p className="text-lg font-semibold text-green-600">
+                Enjoy your meal! 🎉
+              </p>
+            </>
+          )}
+          <button
+            onClick={() => setCurrentOrder(null)}
+            className="mt-6 bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Admin Login Component
+  const AdminLogin = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-orange-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800">Admin Login</h3>
+          <p className="text-gray-600">Please enter your credentials</p>
+        </div>
+        
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (adminCredentials.username === 'admin' && adminCredentials.password === 'password') {
+            setIsAdmin(true);
+            setShowAdminLogin(false);
+            setCurrentPage('admin');
+            setAdminCredentials({ username: '', password: '' });
+          } else {
+            alert('Invalid credentials! Please try again.');
+          }
+        }}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input
+                type="text"
+                value={adminCredentials.username}
+                onChange={(e) => setAdminCredentials({...adminCredentials, username: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Enter username"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={adminCredentials.password}
+                onChange={(e) => setAdminCredentials({...adminCredentials, password: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="flex space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAdminLogin(false);
+                setAdminCredentials({ username: '', password: '' });
+              }}
+              className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Login
+            </button>
+          </div>
+        </form>
+        
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 text-center">
+            Demo Credentials: admin / password
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Customer Details Form
+  const CustomerDetailsForm = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2 text-center">Almost Done! 🍽️</h3>
+        <p className="text-gray-600 mb-6 text-center">
+          Please provide your details to confirm your delicious order
+        </p>
+        
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (customerDetails.name && customerDetails.phone) {
+            placeOrderWithDetails();
+          }
+        }}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+              <input
+                type="text"
+                value={customerDetails.name}
+                onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Enter your name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+              <input
+                type="tel"
+                value={customerDetails.phone}
+                onChange={(e) => setCustomerDetails({...customerDetails, phone: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Enter your phone number"
+                pattern="[0-9]{10}"
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="bg-orange-50 rounded-lg p-4 mt-4">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-gray-800">Order Total:</span>
+              <span className="text-xl font-bold text-orange-600">
+                ₹{cart.reduce((sum, item) => sum + item.price, 0)}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              {cart.length} item{cart.length !== 1 ? 's' : ''} in your order
+            </p>
+          </div>
+          
+          <div className="flex space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setShowOrderForm(false);
+                setCustomerDetails({ name: '', phone: '' });
+              }}
+              className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Back to Cart
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+            >
+              Confirm Order 🚀
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 
   // Menu data based on the images
   const menuData = {
@@ -52,7 +298,7 @@ const NaanStopWebsite = () => {
       { name: 'Jeera Aloo', price: 130 },
       { name: 'Bhindi Masala', price: 160 },
       { name: 'Bhev Bhaji', price: 160 },
-      { name: 'Bhev Tomato', price: 160 },
+      { name: 'Bhev Tomato', price:160 },
       { name: 'Kaju Masala', price: 190 },
       { name: 'Aloo Gobi', price: 160 },
       { name: 'Veg Kofta', price: 140 },
@@ -116,18 +362,25 @@ const NaanStopWebsite = () => {
 
   const placeOrder = () => {
     if (cart.length === 0) return;
-    
+    setShowOrderForm(true);
+  };
+
+  const placeOrderWithDetails = () => {
     const order = {
       id: Date.now(),
       items: [...cart],
       total: cart.reduce((sum, item) => sum + item.price, 0),
       status: 'pending',
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toLocaleString(),
+      customerName: customerDetails.name,
+      customerPhone: customerDetails.phone
     };
     
     setOrders([...orders, order]);
     setCart([]);
-    alert('Order placed successfully!');
+    setShowOrderForm(false);
+    setCurrentOrder(order);
+    setCustomerDetails({ name: '', phone: '' });
   };
 
   const updateOrderStatus = (orderId, status) => {
@@ -240,7 +493,19 @@ const NaanStopWebsite = () => {
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold mb-6">Your Cart</h2>
         {cart.length === 0 ? (
-          <p className="text-gray-600">Your cart is empty</p>
+          <div className="text-center py-12">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="w-12 h-12 text-gray-400" />
+            </div>
+            <p className="text-gray-600 text-lg">Your cart is empty</p>
+            <p className="text-gray-500 mb-6">Add some delicious items from our menu!</p>
+            <button
+              onClick={() => setCurrentPage('menu')}
+              className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Browse Menu
+            </button>
+          </div>
         ) : (
           <div>
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -248,13 +513,13 @@ const NaanStopWebsite = () => {
                 <div key={item.id} className="flex justify-between items-center py-3 border-b">
                   <div>
                     <h4 className="font-semibold">{item.name}</h4>
-                    <p className="text-sm text-gray-600">{item.category}</p>
+                    <p className="text-sm text-gray-600 capitalize">{item.category}</p>
                   </div>
                   <div className="flex items-center">
                     <span className="font-bold mr-4">₹{item.price}</span>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 text-sm"
                     >
                       Remove
                     </button>
@@ -269,7 +534,7 @@ const NaanStopWebsite = () => {
                   onClick={placeOrder}
                   className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors text-lg font-semibold"
                 >
-                  Place Order
+                  Place Order 🚀
                 </button>
               </div>
             </div>
@@ -285,10 +550,13 @@ const NaanStopWebsite = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold">Admin Dashboard</h2>
           <button
-            onClick={() => setIsAdmin(false)}
+            onClick={() => {
+              setIsAdmin(false);
+              setCurrentPage('home');
+            }}
             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
           >
-            Exit Admin
+            Logout
           </button>
         </div>
 
@@ -342,6 +610,8 @@ const NaanStopWebsite = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -354,6 +624,12 @@ const NaanStopWebsite = () => {
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       #{order.id.toString().slice(-6)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {order.customerName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {order.customerPhone}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {order.items.map(item => item.name).join(', ')}
@@ -430,7 +706,7 @@ const NaanStopWebsite = () => {
               </button>
               {!isAdmin ? (
                 <button
-                  onClick={() => setIsAdmin(true)}
+                  onClick={() => setShowAdminLogin(true)}
                   className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center"
                 >
                   <User className="w-4 h-4 mr-2" />
@@ -460,6 +736,11 @@ const NaanStopWebsite = () => {
           {currentPage === 'cart' && <CartPage />}
         </>
       )}
+
+      {/* Modals */}
+      {showAdminLogin && <AdminLogin />}
+      {showOrderForm && <CustomerDetailsForm />}
+      {currentOrder && <OrderTimer order={currentOrder} />}
     </div>
   );
 };
