@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, MapPin, Phone, Clock, User, ChefHat, DollarSign, Package, Star, Utensils, Coffee, Beef, Lock, Timer, CheckCircle, Search, Filter, Calendar, BarChart3, PieChart, TrendingUp } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
 
 const NaanStopWebsite = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -904,16 +904,15 @@ const NaanStopWebsite = () => {
                 Orders & Revenue Trend
               </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
+                  <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="orders" fill="#ea580c" name="Orders" />
-                  <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#dc2626" name="Revenue (₹)" />
-                </LineChart>
+                  <Bar dataKey="orders" fill="#ea580c" name="Orders" />
+                  <Bar dataKey="revenue" fill="#dc2626" name="Revenue (₹)" />
+                </BarChart>
               </ResponsiveContainer>
             </div>
             
@@ -924,7 +923,7 @@ const NaanStopWebsite = () => {
               </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <RechartsPieChart>
-                  <pie
+                  <Pie
                     data={categoryChartData}
                     cx="50%"
                     cy="50%"
@@ -936,7 +935,7 @@ const NaanStopWebsite = () => {
                     {categoryChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
-                  </pie>
+                  </Pie>
                   <Tooltip />
                 </RechartsPieChart>
               </ResponsiveContainer>
