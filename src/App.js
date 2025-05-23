@@ -1,16 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, MapPin, Phone, Clock, User, ChefHat, DollarSign, Package, Star, Utensils, Coffee, Beef, Lock, Timer, CheckCircle } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, Clock, User, ChefHat, DollarSign, Package, Star, Utensils, Coffee, Beef, Lock, Timer, CheckCircle, Search, Filter, Calendar, BarChart3, PieChart, TrendingUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell } from 'recharts';
 
 const NaanStopWebsite = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isChef, setIsChef] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showChefLogin, setShowChefLogin] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({ name: '', phone: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+
+  // Sample data for charts
+  const generateChartData = () => {
+    const today = new Date();
+    const chartData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dayOrders = orders.filter(order => {
+        const orderDate = new Date(order.timestamp);
+        return orderDate.toDateString() === date.toDateString();
+      });
+      chartData.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        orders: dayOrders.length,
+        revenue: dayOrders.reduce((sum, order) => sum + order.total, 0)
+      });
+    }
+    return chartData;
+  };
+
+  const categoryData = () => {
+    const categories = {};
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        categories[item.category] = (categories[item.category] || 0) + 1;
+      });
+    });
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
+  };
+
+  const COLORS = ['#ea580c', '#dc2626', '#d97706', '#ca8a04', '#65a30d', '#059669', '#0891b2', '#0284c7'];
 
   // Timer component for order tracking
   const OrderTimer = ({ order }) => {
@@ -100,7 +138,7 @@ const NaanStopWebsite = () => {
     );
   };
 
-  // Admin Login Component
+  // Login Components
   const AdminLogin = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
@@ -129,10 +167,11 @@ const NaanStopWebsite = () => {
               <input
                 type="text"
                 value={adminCredentials.username}
-                onChange={(e) => setAdminCredentials({...adminCredentials, username: e.target.value})}
+                onChange={(e) => setAdminCredentials(prev => ({...prev, username: e.target.value}))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter username"
                 required
+                autoComplete="username"
               />
             </div>
             <div>
@@ -140,10 +179,11 @@ const NaanStopWebsite = () => {
               <input
                 type="password"
                 value={adminCredentials.password}
-                onChange={(e) => setAdminCredentials({...adminCredentials, password: e.target.value})}
+                onChange={(e) => setAdminCredentials(prev => ({...prev, password: e.target.value}))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter password"
                 required
+                autoComplete="current-password"
               />
             </div>
           </div>
@@ -177,6 +217,84 @@ const NaanStopWebsite = () => {
     </div>
   );
 
+  const ChefLogin = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ChefHat className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800">Chef Login</h3>
+          <p className="text-gray-600">Kitchen Access Portal</p>
+        </div>
+        
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (adminCredentials.username === 'chef' && adminCredentials.password === 'kitchen') {
+            setIsChef(true);
+            setShowChefLogin(false);
+            setCurrentPage('chef');
+            setAdminCredentials({ username: '', password: '' });
+          } else {
+            alert('Invalid credentials! Please try again.');
+          }
+        }}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input
+                type="text"
+                value={adminCredentials.username}
+                onChange={(e) => setAdminCredentials(prev => ({...prev, username: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter username"
+                required
+                autoComplete="username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={adminCredentials.password}
+                onChange={(e) => setAdminCredentials(prev => ({...prev, password: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter password"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+          </div>
+          
+          <div className="flex space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setShowChefLogin(false);
+                setAdminCredentials({ username: '', password: '' });
+              }}
+              className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Enter Kitchen
+            </button>
+          </div>
+        </form>
+        
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 text-center">
+            Demo Credentials: chef / kitchen
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   // Customer Details Form
   const CustomerDetailsForm = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -188,7 +306,7 @@ const NaanStopWebsite = () => {
         
         <form onSubmit={(e) => {
           e.preventDefault();
-          if (customerDetails.name && customerDetails.phone) {
+          if (customerDetails.name.trim() && customerDetails.phone.trim()) {
             placeOrderWithDetails();
           }
         }}>
@@ -198,10 +316,11 @@ const NaanStopWebsite = () => {
               <input
                 type="text"
                 value={customerDetails.name}
-                onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
+                onChange={(e) => setCustomerDetails(prev => ({...prev, name: e.target.value}))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter your name"
                 required
+                autoComplete="name"
               />
             </div>
             <div>
@@ -209,11 +328,11 @@ const NaanStopWebsite = () => {
               <input
                 type="tel"
                 value={customerDetails.phone}
-                onChange={(e) => setCustomerDetails({...customerDetails, phone: e.target.value})}
+                onChange={(e) => setCustomerDetails(prev => ({...prev, phone: e.target.value}))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter your phone number"
-                pattern="[0-9]{10}"
                 required
+                autoComplete="tel"
               />
             </div>
           </div>
@@ -298,7 +417,7 @@ const NaanStopWebsite = () => {
       { name: 'Jeera Aloo', price: 130 },
       { name: 'Bhindi Masala', price: 160 },
       { name: 'Bhev Bhaji', price: 160 },
-      { name: 'Bhev Tomato', price:160 },
+      { name: 'Bhev Tomato', price: 160 },
       { name: 'Kaju Masala', price: 190 },
       { name: 'Aloo Gobi', price: 160 },
       { name: 'Veg Kofta', price: 140 },
@@ -372,11 +491,12 @@ const NaanStopWebsite = () => {
       total: cart.reduce((sum, item) => sum + item.price, 0),
       status: 'pending',
       timestamp: new Date().toLocaleString(),
+      orderTime: new Date(),
       customerName: customerDetails.name,
       customerPhone: customerDetails.phone
     };
     
-    setOrders([...orders, order]);
+    setOrders(prev => [...prev, order]);
     setCart([]);
     setShowOrderForm(false);
     setCurrentOrder(order);
@@ -388,6 +508,37 @@ const NaanStopWebsite = () => {
       order.id === orderId ? { ...order, status } : order
     ));
   };
+
+  // Filter orders based on search and filters
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = searchTerm === '' || 
+      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerPhone.includes(searchTerm) ||
+      order.id.toString().includes(searchTerm);
+    
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    
+    const matchesDate = dateFilter === 'all' || (() => {
+      const orderDate = new Date(order.timestamp);
+      const today = new Date();
+      switch(dateFilter) {
+        case 'today':
+          return orderDate.toDateString() === today.toDateString();
+        case 'yesterday':
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          return orderDate.toDateString() === yesterday.toDateString();
+        case 'week':
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return orderDate >= weekAgo;
+        default:
+          return true;
+      }
+    })();
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   const MenuSection = ({ title, items, category, icon: Icon }) => (
     <div className="mb-8">
@@ -544,133 +695,380 @@ const NaanStopWebsite = () => {
     </div>
   );
 
-  const AdminDashboard = () => (
-    <div className="py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">Admin Dashboard</h2>
-          <button
-            onClick={() => {
-              setIsAdmin(false);
-              setCurrentPage('home');
-            }}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-          >
-            Logout
-          </button>
+  // Chef Dashboard with Order Queue and Timers
+  const ChefDashboard = () => {
+    const pendingOrders = orders.filter(order => order.status === 'pending' || order.status === 'preparing');
+    
+    const OrderCard = ({ order }) => {
+      const [timeElapsed, setTimeElapsed] = useState(0);
+      
+      useEffect(() => {
+        const timer = setInterval(() => {
+          const elapsed = Math.floor((new Date() - new Date(order.orderTime)) / 1000);
+          setTimeElapsed(elapsed);
+        }, 1000);
+        
+        return () => clearInterval(timer);
+      }, [order.orderTime]);
+      
+      const formatElapsedTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+      };
+      
+      const isUrgent = timeElapsed > 300; // 5 minutes
+      
+      return (
+        <div className={`bg-white rounded-lg shadow-md p-4 border-l-4 ${isUrgent ? 'border-red-500' : 'border-blue-500'}`}>
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h4 className="font-bold text-lg">Order #{order.id.toString().slice(-6)}</h4>
+              <p className="text-sm text-gray-600">{order.customerName} - {order.customerPhone}</p>
+            </div>
+            <div className="text-right">
+              <div className={`text-2xl font-bold ${isUrgent ? 'text-red-600' : 'text-blue-600'}`}>
+                {formatElapsedTime(timeElapsed)}
+              </div>
+              <p className="text-xs text-gray-500">elapsed</p>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <h5 className="font-semibold mb-2">Items to prepare:</h5>
+            <ul className="space-y-1">
+              {order.items.map((item, idx) => (
+                <li key={idx} className="text-sm bg-gray-50 px-2 py-1 rounded">
+                  {item.name} - ₹{item.price}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="flex space-x-2">
+            {order.status === 'pending' && (
+              <button
+                onClick={() => updateOrderStatus(order.id, 'preparing')}
+                className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700"
+              >
+                Start Cooking
+              </button>
+            )}
+            {order.status === 'preparing' && (
+              <button
+                onClick={() => updateOrderStatus(order.id, 'ready')}
+                className="flex-1 bg-green-600 text-white py-2 px-3 rounded text-sm hover:bg-green-700"
+              >
+                Mark Ready
+              </button>
+            )}
+          </div>
         </div>
+      );
+    };
+    
+    return (
+      <div className="py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold">Kitchen Dashboard</h2>
+            <button
+              onClick={() => {
+                setIsChef(false);
+                setCurrentPage('home');
+              }}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+            >
+              Exit Kitchen
+            </button>
+          </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-blue-500 text-white p-6 rounded-lg">
-            <div className="flex items-center">
-              <Package className="w-8 h-8 mr-3" />
-              <div>
-                <p className="text-sm opacity-80">Total Orders</p>
-                <p className="text-2xl font-bold">{orders.length}</p>
+          {/* Kitchen Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-yellow-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <Timer className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Pending Orders</p>
+                  <p className="text-2xl font-bold">{orders.filter(o => o.status === 'pending').length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <ChefHat className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Preparing</p>
+                  <p className="text-2xl font-bold">{orders.filter(o => o.status === 'preparing').length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-green-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Ready Today</p>
+                  <p className="text-2xl font-bold">{orders.filter(o => o.status === 'ready' || o.status === 'completed').length}</p>
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-green-500 text-white p-6 rounded-lg">
-            <div className="flex items-center">
-              <DollarSign className="w-8 h-8 mr-3" />
-              <div>
-                <p className="text-sm opacity-80">Total Revenue</p>
-                <p className="text-2xl font-bold">₹{orders.reduce((sum, order) => sum + order.total, 0)}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-yellow-500 text-white p-6 rounded-lg">
-            <div className="flex items-center">
-              <Clock className="w-8 h-8 mr-3" />
-              <div>
-                <p className="text-sm opacity-80">Pending Orders</p>
-                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'pending').length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-purple-500 text-white p-6 rounded-lg">
-            <div className="flex items-center">
-              <Star className="w-8 h-8 mr-3" />
-              <div>
-                <p className="text-sm opacity-80">Completed</p>
-                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'completed').length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Orders Table */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6 border-b">
-            <h3 className="text-xl font-semibold">Recent Orders</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {orders.map((order) => (
-                  <tr key={order.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{order.id.toString().slice(-6)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.customerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.customerPhone}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.items.map(item => item.name).join(', ')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₹{order.total}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'ready' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.timestamp}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={order.status}
-                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                        className="text-sm border rounded px-2 py-1"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="preparing">Preparing</option>
-                        <option value="ready">Ready</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </td>
-                  </tr>
+          {/* Order Queue */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-semibold mb-4">Order Queue</h3>
+            {pendingOrders.length === 0 ? (
+              <div className="text-center py-8">
+                <ChefHat className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No pending orders. Kitchen is caught up! 🎉</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingOrders.map(order => (
+                  <OrderCard key={order.id} order={order} />
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  // Enhanced Admin Dashboard with Visualizations
+  const AdminDashboard = () => {
+    const chartData = generateChartData();
+    const categoryChartData = categoryData();
+    
+    return (
+      <div className="py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold">Admin Dashboard</h2>
+            <button
+              onClick={() => {
+                setIsAdmin(false);
+                setCurrentPage('home');
+              }}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+            >
+              Logout
+            </button>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-blue-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <Package className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Total Orders</p>
+                  <p className="text-2xl font-bold">{orders.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-green-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <DollarSign className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Total Revenue</p>
+                  <p className="text-2xl font-bold">₹{orders.reduce((sum, order) => sum + order.total, 0)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-yellow-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <Clock className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Pending Orders</p>
+                  <p className="text-2xl font-bold">{orders.filter(o => o.status === 'pending').length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-purple-500 text-white p-6 rounded-lg">
+              <div className="flex items-center">
+                <Star className="w-8 h-8 mr-3" />
+                <div>
+                  <p className="text-sm opacity-80">Completed</p>
+                  <p className="text-2xl font-bold">{orders.filter(o => o.status === 'completed').length}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Orders & Revenue Trend
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="orders" fill="#ea580c" name="Orders" />
+                  <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#dc2626" name="Revenue (₹)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <PieChart className="w-5 h-5 mr-2" />
+                Popular Categories
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsPieChart>
+                  <pie
+                    data={categoryChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {categoryChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </pie>
+                  <Tooltip />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center space-x-2">
+                <Search className="w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search orders, customer, phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="ready">Ready</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 Days</option>
+                </select>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                Showing {filteredOrders.length} of {orders.length} orders
+              </div>
+            </div>
+          </div>
+
+          {/* Orders Table */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6 border-b">
+              <h3 className="text-xl font-semibold">Orders Management</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{order.id.toString().slice(-6)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.customerName || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.customerPhone || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {order.items.map(item => item.name).join(', ')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ₹{order.total}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'ready' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.timestamp}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                          className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="preparing">Preparing</option>
+                          <option value="ready">Ready</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredOrders.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No orders found matching your criteria.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -704,21 +1102,40 @@ const NaanStopWebsite = () => {
                 <ShoppingCart className="w-5 h-5 mr-1" />
                 Cart ({cart.length})
               </button>
-              {!isAdmin ? (
-                <button
-                  onClick={() => setShowAdminLogin(true)}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Admin
-                </button>
-              ) : (
+              {!isAdmin && !isChef && (
+                <>
+                  <button
+                    onClick={() => setShowChefLogin(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                  >
+                    <ChefHat className="w-4 h-4 mr-2" />
+                    Chef
+                  </button>
+                  <button
+                    onClick={() => setShowAdminLogin(true)}
+                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Admin
+                  </button>
+                </>
+              )}
+              {isAdmin && (
                 <button
                   onClick={() => setCurrentPage('admin')}
                   className={`hover:text-orange-600 flex items-center ${currentPage === 'admin' ? 'text-orange-600' : 'text-gray-700'}`}
                 >
-                  <ChefHat className="w-5 h-5 mr-1" />
+                  <User className="w-5 h-5 mr-1" />
                   Dashboard
+                </button>
+              )}
+              {isChef && (
+                <button
+                  onClick={() => setCurrentPage('chef')}
+                  className={`hover:text-blue-600 flex items-center ${currentPage === 'chef' ? 'text-blue-600' : 'text-gray-700'}`}
+                >
+                  <ChefHat className="w-5 h-5 mr-1" />
+                  Kitchen
                 </button>
               )}
             </div>
@@ -729,6 +1146,8 @@ const NaanStopWebsite = () => {
       {/* Main Content */}
       {isAdmin && currentPage === 'admin' ? (
         <AdminDashboard />
+      ) : isChef && currentPage === 'chef' ? (
+        <ChefDashboard />
       ) : (
         <>
           {currentPage === 'home' && <HomePage />}
@@ -739,6 +1158,7 @@ const NaanStopWebsite = () => {
 
       {/* Modals */}
       {showAdminLogin && <AdminLogin />}
+      {showChefLogin && <ChefLogin />}
       {showOrderForm && <CustomerDetailsForm />}
       {currentOrder && <OrderTimer order={currentOrder} />}
     </div>
