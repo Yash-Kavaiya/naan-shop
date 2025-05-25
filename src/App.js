@@ -1,145 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, MapPin, Phone, Clock, User, ChefHat, DollarSign, Package, Star, Utensils, Coffee, Beef, Lock, Timer, CheckCircle, Search, Filter, Calendar, BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
 
-const NaanStopWebsite = () => {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [cart, setCart] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isChef, setIsChef] = useState(false);
-  const [showOrderForm, setShowOrderForm] = useState(false);
-  const [currentOrder, setCurrentOrder] = useState(null);
-  const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [showChefLogin, setShowChefLogin] = useState(false);
-  const [customerDetails, setCustomerDetails] = useState({ name: '', phone: '' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
-
-  // Sample data for charts
-  const generateChartData = () => {
-    const today = new Date();
-    const chartData = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dayOrders = orders.filter(order => {
-        const orderDate = new Date(order.timestamp);
-        return orderDate.toDateString() === date.toDateString();
-      });
-      chartData.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        orders: dayOrders.length,
-        revenue: dayOrders.reduce((sum, order) => sum + order.total, 0)
-      });
+// Move components outside to prevent re-definition on every render
+const AdminLogin = ({ showAdminLogin, setShowAdminLogin, adminCredentials, setAdminCredentials, setIsAdmin, setCurrentPage }) => {
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (adminCredentials.username === 'admin' && adminCredentials.password === 'password') {
+      setIsAdmin(true);
+      setShowAdminLogin(false);
+      setCurrentPage('admin');
+      setAdminCredentials({ username: '', password: '' });
+    } else {
+      alert('Invalid credentials! Please try again.');
     }
-    return chartData;
-  };
+  }, [adminCredentials, setIsAdmin, setShowAdminLogin, setCurrentPage, setAdminCredentials]);
 
-  const categoryData = () => {
-    const categories = {};
-    orders.forEach(order => {
-      order.items.forEach(item => {
-        categories[item.category] = (categories[item.category] || 0) + 1;
-      });
-    });
-    return Object.entries(categories).map(([name, value]) => ({ name, value }));
-  };
+  const handleClose = useCallback(() => {
+    setShowAdminLogin(false);
+    setAdminCredentials({ username: '', password: '' });
+  }, [setShowAdminLogin, setAdminCredentials]);
 
-  const COLORS = ['#ea580c', '#dc2626', '#d97706', '#ca8a04', '#65a30d', '#059669', '#0891b2', '#0284c7'];
+  if (!showAdminLogin) return null;
 
-  // Timer component for order tracking
-  const OrderTimer = ({ order }) => {
-    const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
-    const [isCompleted, setIsCompleted] = useState(false);
-
-    useEffect(() => {
-      if (order && timeLeft > 0) {
-        const timer = setInterval(() => {
-          setTimeLeft(prev => {
-            if (prev <= 1) {
-              setIsCompleted(true);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-
-        return () => clearInterval(timer);
-      }
-    }, [order, timeLeft]);
-
-    const formatTime = (seconds) => {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    if (!order) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
-          {!isCompleted ? (
-            <>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Timer className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Confirmed!</h3>
-              <p className="text-gray-600 mb-4">
-                Thank you <span className="font-semibold text-orange-600">{order.customerName}</span>! 
-                Your delicious meal is being prepared with love.
-              </p>
-              <div className="bg-orange-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-600 mb-2">Estimated preparation time:</p>
-                <div className="text-3xl font-bold text-orange-600 mb-2">{formatTime(timeLeft)}</div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-orange-600 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${((600 - timeLeft) / 600) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">
-                Order ID: #{order.id.toString().slice(-6)}
-              </p>
-              <p className="text-sm text-gray-600">
-                We'll have your fresh, hot meal ready soon. Thank you for choosing Naan Stop! 🍽️
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Ready!</h3>
-              <p className="text-gray-600 mb-4">
-                <span className="font-semibold text-orange-600">{order.customerName}</span>, 
-                your delicious meal is ready for pickup! 
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                Please visit our counter with Order ID: #{order.id.toString().slice(-6)}
-              </p>
-              <p className="text-lg font-semibold text-green-600">
-                Enjoy your meal! 🎉
-              </p>
-            </>
-          )}
-          <button
-            onClick={() => setCurrentOrder(null)}
-            className="mt-6 bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Login Components
-  const AdminLogin = () => (
+  return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
         <div className="text-center mb-6">
@@ -150,17 +34,7 @@ const NaanStopWebsite = () => {
           <p className="text-gray-600">Please enter your credentials</p>
         </div>
         
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (adminCredentials.username === 'admin' && adminCredentials.password === 'password') {
-            setIsAdmin(true);
-            setShowAdminLogin(false);
-            setCurrentPage('admin');
-            setAdminCredentials({ username: '', password: '' });
-          } else {
-            alert('Invalid credentials! Please try again.');
-          }
-        }}>
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
@@ -191,10 +65,7 @@ const NaanStopWebsite = () => {
           <div className="flex space-x-3 mt-6">
             <button
               type="button"
-              onClick={() => {
-                setShowAdminLogin(false);
-                setAdminCredentials({ username: '', password: '' });
-              }}
+              onClick={handleClose}
               className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
             >
               Cancel
@@ -216,8 +87,29 @@ const NaanStopWebsite = () => {
       </div>
     </div>
   );
+};
 
-  const ChefLogin = () => (
+const ChefLogin = ({ showChefLogin, setShowChefLogin, adminCredentials, setAdminCredentials, setIsChef, setCurrentPage }) => {
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (adminCredentials.username === 'chef' && adminCredentials.password === 'kitchen') {
+      setIsChef(true);
+      setShowChefLogin(false);
+      setCurrentPage('chef');
+      setAdminCredentials({ username: '', password: '' });
+    } else {
+      alert('Invalid credentials! Please try again.');
+    }
+  }, [adminCredentials, setIsChef, setShowChefLogin, setCurrentPage, setAdminCredentials]);
+
+  const handleClose = useCallback(() => {
+    setShowChefLogin(false);
+    setAdminCredentials({ username: '', password: '' });
+  }, [setShowChefLogin, setAdminCredentials]);
+
+  if (!showChefLogin) return null;
+
+  return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
         <div className="text-center mb-6">
@@ -228,17 +120,7 @@ const NaanStopWebsite = () => {
           <p className="text-gray-600">Kitchen Access Portal</p>
         </div>
         
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (adminCredentials.username === 'chef' && adminCredentials.password === 'kitchen') {
-            setIsChef(true);
-            setShowChefLogin(false);
-            setCurrentPage('chef');
-            setAdminCredentials({ username: '', password: '' });
-          } else {
-            alert('Invalid credentials! Please try again.');
-          }
-        }}>
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
@@ -269,10 +151,7 @@ const NaanStopWebsite = () => {
           <div className="flex space-x-3 mt-6">
             <button
               type="button"
-              onClick={() => {
-                setShowChefLogin(false);
-                setAdminCredentials({ username: '', password: '' });
-              }}
+              onClick={handleClose}
               className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
             >
               Cancel
@@ -294,9 +173,24 @@ const NaanStopWebsite = () => {
       </div>
     </div>
   );
+};
 
-  // Customer Details Form
-  const CustomerDetailsForm = () => (
+const CustomerDetailsForm = ({ showOrderForm, setShowOrderForm, customerDetails, setCustomerDetails, cart, placeOrderWithDetails }) => {
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (customerDetails.name.trim() && customerDetails.phone.trim()) {
+      placeOrderWithDetails();
+    }
+  }, [customerDetails, placeOrderWithDetails]);
+
+  const handleClose = useCallback(() => {
+    setShowOrderForm(false);
+    setCustomerDetails({ name: '', phone: '' });
+  }, [setShowOrderForm, setCustomerDetails]);
+
+  if (!showOrderForm) return null;
+
+  return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
         <h3 className="text-2xl font-bold text-gray-800 mb-2 text-center">Almost Done! 🍽️</h3>
@@ -304,12 +198,7 @@ const NaanStopWebsite = () => {
           Please provide your details to confirm your delicious order
         </p>
         
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (customerDetails.name.trim() && customerDetails.phone.trim()) {
-            placeOrderWithDetails();
-          }
-        }}>
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
@@ -352,10 +241,7 @@ const NaanStopWebsite = () => {
           <div className="flex space-x-3 mt-6">
             <button
               type="button"
-              onClick={() => {
-                setShowOrderForm(false);
-                setCustomerDetails({ name: '', phone: '' });
-              }}
+              onClick={handleClose}
               className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
             >
               Back to Cart
@@ -371,6 +257,147 @@ const NaanStopWebsite = () => {
       </div>
     </div>
   );
+};
+
+// Timer component for order tracking
+const OrderTimer = ({ order, setCurrentOrder }) => {
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    if (order && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setIsCompleted(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [order, timeLeft]);
+
+  const formatTime = useCallback((seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setCurrentOrder(null);
+  }, [setCurrentOrder]);
+
+  if (!order) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+        {!isCompleted ? (
+          <>
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Timer className="w-8 h-8 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Confirmed!</h3>
+            <p className="text-gray-600 mb-4">
+              Thank you <span className="font-semibold text-orange-600">{order.customerName}</span>! 
+              Your delicious meal is being prepared with love.
+            </p>
+            <div className="bg-orange-50 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-600 mb-2">Estimated preparation time:</p>
+              <div className="text-3xl font-bold text-orange-600 mb-2">{formatTime(timeLeft)}</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-orange-600 h-2 rounded-full transition-all duration-1000"
+                  style={{ width: `${((600 - timeLeft) / 600) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Order ID: #{order.id.toString().slice(-6)}
+            </p>
+            <p className="text-sm text-gray-600">
+              We'll have your fresh, hot meal ready soon. Thank you for choosing Naan Stop! 🍽️
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Order Ready!</h3>
+            <p className="text-gray-600 mb-4">
+              <span className="font-semibold text-orange-600">{order.customerName}</span>, 
+              your delicious meal is ready for pickup! 
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Please visit our counter with Order ID: #{order.id.toString().slice(-6)}
+            </p>
+            <p className="text-lg font-semibold text-green-600">
+              Enjoy your meal! 🎉
+            </p>
+          </>
+        )}
+        <button
+          onClick={handleClose}
+          className="mt-6 bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const NaanStopWebsite = () => {
+  const [currentPage, setCurrentPage] = useState('home');
+  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isChef, setIsChef] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [adminCredentials, setAdminCredentials] = useState({ username: '', password: '' });
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showChefLogin, setShowChefLogin] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({ name: '', phone: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+
+  // Sample data for charts
+  const generateChartData = useCallback(() => {
+    const today = new Date();
+    const chartData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dayOrders = orders.filter(order => {
+        const orderDate = new Date(order.timestamp);
+        return orderDate.toDateString() === date.toDateString();
+      });
+      chartData.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        orders: dayOrders.length,
+        revenue: dayOrders.reduce((sum, order) => sum + order.total, 0)
+      });
+    }
+    return chartData;
+  }, [orders]);
+
+  const categoryData = useCallback(() => {
+    const categories = {};
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        categories[item.category] = (categories[item.category] || 0) + 1;
+      });
+    });
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
+  }, [orders]);
+
+  const COLORS = ['#ea580c', '#dc2626', '#d97706', '#ca8a04', '#65a30d', '#059669', '#0891b2', '#0284c7'];
 
   // Menu data based on the images
   const menuData = {
@@ -470,21 +497,21 @@ const NaanStopWebsite = () => {
     ]
   };
 
-  const addToCart = (item, category) => {
+  const addToCart = useCallback((item, category) => {
     const cartItem = { ...item, category, id: Date.now() + Math.random() };
-    setCart([...cart, cartItem]);
-  };
+    setCart(prev => [...prev, cartItem]);
+  }, []);
 
-  const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
+  const removeFromCart = useCallback((id) => {
+    setCart(prev => prev.filter(item => item.id !== id));
+  }, []);
 
-  const placeOrder = () => {
+  const placeOrder = useCallback(() => {
     if (cart.length === 0) return;
     setShowOrderForm(true);
-  };
+  }, [cart.length]);
 
-  const placeOrderWithDetails = () => {
+  const placeOrderWithDetails = useCallback(() => {
     const order = {
       id: Date.now(),
       items: [...cart],
@@ -501,13 +528,13 @@ const NaanStopWebsite = () => {
     setShowOrderForm(false);
     setCurrentOrder(order);
     setCustomerDetails({ name: '', phone: '' });
-  };
+  }, [cart, customerDetails]);
 
-  const updateOrderStatus = (orderId, status) => {
-    setOrders(orders.map(order => 
+  const updateOrderStatus = useCallback((orderId, status) => {
+    setOrders(prev => prev.map(order => 
       order.id === orderId ? { ...order, status } : order
     ));
-  };
+  }, []);
 
   // Filter orders based on search and filters
   const filteredOrders = orders.filter(order => {
@@ -1156,10 +1183,34 @@ const NaanStopWebsite = () => {
       )}
 
       {/* Modals */}
-      {showAdminLogin && <AdminLogin />}
-      {showChefLogin && <ChefLogin />}
-      {showOrderForm && <CustomerDetailsForm />}
-      {currentOrder && <OrderTimer order={currentOrder} />}
+      <AdminLogin
+        showAdminLogin={showAdminLogin}
+        setShowAdminLogin={setShowAdminLogin}
+        adminCredentials={adminCredentials}
+        setAdminCredentials={setAdminCredentials}
+        setIsAdmin={setIsAdmin}
+        setCurrentPage={setCurrentPage}
+      />
+      <ChefLogin
+        showChefLogin={showChefLogin}
+        setShowChefLogin={setShowChefLogin}
+        adminCredentials={adminCredentials}
+        setAdminCredentials={setAdminCredentials}
+        setIsChef={setIsChef}
+        setCurrentPage={setCurrentPage}
+      />
+      <CustomerDetailsForm
+        showOrderForm={showOrderForm}
+        setShowOrderForm={setShowOrderForm}
+        customerDetails={customerDetails}
+        setCustomerDetails={setCustomerDetails}
+        cart={cart}
+        placeOrderWithDetails={placeOrderWithDetails}
+      />
+      <OrderTimer
+        order={currentOrder}
+        setCurrentOrder={setCurrentOrder}
+      />
     </div>
   );
 };
