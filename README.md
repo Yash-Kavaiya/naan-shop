@@ -417,7 +417,7 @@ graph TD
 |-----------|------------|---------|---------|
 | **Frontend Framework** | React | 18.2.0 | UI component architecture |
 | **UI Library** | React DOM | 18.2.0 | DOM rendering and manipulation |
-| **Styling** | Tailwind CSS | (via CRA) | Utility-first CSS framework |
+| **Styling** | Custom CSS | CSS3 | Responsive design with custom styles |
 | **Icons** | Lucide React | 0.263.1 | Modern icon library |
 | **Charts** | Recharts | 2.15.3 | Data visualization |
 | **Backend** | Firebase | 12.0.0 | Real-time database & auth |
@@ -431,7 +431,7 @@ graph TD
 | Feature | Choice | Alternative | Why We Chose It |
 |---------|--------|-------------|-----------------|
 | **Framework** | React | Vue/Angular | Large ecosystem, component reusability |
-| **Styling** | Tailwind | Bootstrap/Material | Utility-first, customizable |
+| **Styling** | Custom CSS | Tailwind/Bootstrap | Full control, no extra dependencies |
 | **Charts** | Recharts | Chart.js/D3 | React-friendly, declarative |
 | **Icons** | Lucide | Font Awesome | Lightweight, tree-shakeable |
 | **Backend** | Firebase | REST API/GraphQL | Real-time sync, easy setup |
