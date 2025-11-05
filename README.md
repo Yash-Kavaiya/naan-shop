@@ -986,10 +986,10 @@ firebase deploy --only hosting
 
 | Resource | Link | Description |
 |----------|------|-------------|
-| 🏠 **Live Demo** | [Coming Soon] | Try the application |
+| 🏠 **Live Demo** | Demo deployment pending | See installation guide to run locally |
 | 📚 **Documentation** | [This README] | Complete guide |
-| 🐛 **Issues** | [GitHub Issues](https://github.com/Yash-Kavaiya/naan-shop/issues) | Report bugs |
-| 💬 **Discussions** | [GitHub Discussions](https://github.com/Yash-Kavaiya/naan-shop/discussions) | Ask questions |
+| 🐛 **Issues** | [GitHub Issues](https://github.com/Yash-Kavaiya/naan-shop/issues) | Report bugs and feature requests |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/Yash-Kavaiya/naan-shop/discussions) | Ask questions and share ideas |
 | 📧 **Contact** | 7507687563 / 8788619308 | Direct support |
 
 ### Command Reference
